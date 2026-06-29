@@ -90,7 +90,7 @@ const PARTICLES = Array.from({ length: 70 }, (_, i) => ({
 function CssFallbackBackground() {
   return (
     <div style={{ position: "absolute", inset: 0,
-      background: "radial-gradient(ellipse at 20% 50%,#052e16 0%,#030f0a 60%,#010805 100%)",
+      background: "radial-gradient(ellipse at 30% 40%,#ecfdf5 0%,#f0fdf4 40%,#ffffff 100%)",
       overflow: "hidden" }}>
       <style>{`
         @keyframes rqFloatA{0%,100%{transform:translateY(0) rotate(0deg);opacity:.18}50%{transform:translateY(-40px) rotate(180deg);opacity:.32}}
@@ -147,8 +147,8 @@ function CssFallbackBackground() {
         maskImage:"linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 100%)" }}/>
 
       {/* Depth gradients */}
-      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 80% 20%,rgba(6,95,70,.25) 0%,transparent 50%)" }}/>
-      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 10% 80%,rgba(16,185,129,.12) 0%,transparent 50%)" }}/>
+      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 80% 20%,rgba(16,185,129,.08) 0%,transparent 50%)" }}/>
+      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 10% 80%,rgba(52,211,153,.06) 0%,transparent 50%)" }}/>
     </div>
   );
 }
