@@ -43,33 +43,33 @@ function Scene() {
   return (
     <group ref={groupRef}>
       <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={2} color="#8b5cf6" />
-      <directionalLight position={[-10, -10, -5]} intensity={1} color="#3b82f6" />
+      <directionalLight position={[10, 10, 5]} intensity={2} color="#34d399" />
+      <directionalLight position={[-10, -10, -5]} intensity={1} color="#10b981" />
       <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
         <mesh ref={torusRef} position={[5, 0, -10]} scale={2}>
           <torusKnotGeometry args={[2, 0.6, 128, 32]} />
-          <meshPhysicalMaterial color="#000000" emissive="#4c1d95" emissiveIntensity={0.5}
+          <meshPhysicalMaterial color="#000000" emissive="#065f46" emissiveIntensity={0.5}
             roughness={0.1} metalness={0.9} transparent opacity={0.8} wireframe />
         </mesh>
       </Float>
       <Float speed={1.5} rotationIntensity={1} floatIntensity={2}>
         <mesh position={[-8, 5, -15]} scale={1.5}>
           <icosahedronGeometry args={[1, 0]} />
-          <meshStandardMaterial color="#3b82f6" wireframe transparent opacity={0.3} />
+          <meshStandardMaterial color="#34d399" wireframe transparent opacity={0.3} />
         </mesh>
       </Float>
       <Float speed={2.5} rotationIntensity={1.5} floatIntensity={1}>
         <mesh position={[8, -5, -20]} scale={2}>
           <icosahedronGeometry args={[1, 1]} />
-          <meshStandardMaterial color="#8b5cf6" wireframe transparent opacity={0.2} />
+          <meshStandardMaterial color="#10b981" wireframe transparent opacity={0.2} />
         </mesh>
       </Float>
       <Points ref={particlesRef} positions={positions} stride={3}>
-        <PointMaterial transparent color="#a78bfa" size={0.1} sizeAttenuation
+        <PointMaterial transparent color="#6ee7b7" size={0.1} sizeAttenuation
           depthWrite={false} blending={THREE.AdditiveBlending} />
       </Points>
       <Grid position={[0, -10, 0]} args={[100, 100]} cellSize={1} cellThickness={1}
-        cellColor="#3b82f6" sectionSize={5} sectionThickness={1.5} sectionColor="#4c1d95"
+        cellColor="#10b981" sectionSize={5} sectionThickness={1.5} sectionColor="#065f46"
         fadeDistance={50} fadeStrength={1} />
     </group>
   );
@@ -82,7 +82,7 @@ const PARTICLES = Array.from({ length: 70 }, (_, i) => ({
   left: `${(i * 137.508) % 100}%`,
   top: `${(i * 97.3) % 100}%`,
   size: ((i * 31) % 3) + 1,
-  color: i % 3 === 0 ? "#a78bfa" : i % 3 === 1 ? "#60a5fa" : "#c4b5fd",
+  color: i % 3 === 0 ? "#6ee7b7" : i % 3 === 1 ? "#34d399" : "#a7f3d0",
   duration: 3 + ((i * 17) % 5),
   delay: (i * 0.23) % 4,
 }));
@@ -90,7 +90,7 @@ const PARTICLES = Array.from({ length: 70 }, (_, i) => ({
 function CssFallbackBackground() {
   return (
     <div style={{ position: "absolute", inset: 0,
-      background: "radial-gradient(ellipse at 20% 50%,#1e0b3e 0%,#050510 60%,#000308 100%)",
+      background: "radial-gradient(ellipse at 20% 50%,#052e16 0%,#030f0a 60%,#010805 100%)",
       overflow: "hidden" }}>
       <style>{`
         @keyframes rqFloatA{0%,100%{transform:translateY(0) rotate(0deg);opacity:.18}50%{transform:translateY(-40px) rotate(180deg);opacity:.32}}
@@ -107,23 +107,23 @@ function CssFallbackBackground() {
       <div style={{ position:"absolute",right:"8%",top:"12%",width:540,height:540,display:"flex",alignItems:"center",justifyContent:"center" }}>
         {[540,420,300,180].map((s,i)=>(
           <div key={s} style={{ position:"absolute",width:s,height:s,borderRadius:"50%",
-            border:`${i===0?2:1}px solid rgba(${i%2===0?"139,92,246":"59,130,246"},${0.35-i*0.07})`,
-            boxShadow:i===0?"0 0 60px rgba(139,92,246,.15),inset 0 0 60px rgba(59,130,246,.08)":undefined,
+            border:`${i===0?2:1}px solid rgba(${i%2===0?"52,211,153":"16,185,129"},${0.35-i*0.07})`,
+            boxShadow:i===0?"0 0 60px rgba(52,211,153,.15),inset 0 0 60px rgba(16,185,129,.08)":undefined,
             animation:`rqFloatA ${12+i*3}s ease-in-out infinite${i%2?"":" reverse"}` }} />
         ))}
-        <div style={{ position:"absolute",width:8,height:8,borderRadius:"50%",background:"rgba(167,139,250,.7)",
-          boxShadow:"0 0 10px rgba(167,139,250,.8)",animation:"rqOrbit 8s linear infinite" }}/>
-        <div style={{ position:"absolute",width:6,height:6,borderRadius:"50%",background:"rgba(96,165,250,.6)",
-          boxShadow:"0 0 8px rgba(96,165,250,.7)",animation:"rqOrbitB 14s linear infinite reverse" }}/>
+        <div style={{ position:"absolute",width:8,height:8,borderRadius:"50%",background:"rgba(110,231,183,.7)",
+          boxShadow:"0 0 10px rgba(110,231,183,.8)",animation:"rqOrbit 8s linear infinite" }}/>
+        <div style={{ position:"absolute",width:6,height:6,borderRadius:"50%",background:"rgba(52,211,153,.6)",
+          boxShadow:"0 0 8px rgba(52,211,153,.7)",animation:"rqOrbitB 14s linear infinite reverse" }}/>
       </div>
 
       {/* Rotating diamonds (icosahedron stand-ins) */}
       {[
-        { l:"7%",  t:"28%", s:120, delay:"0s",   dur:"8s",  col:"rgba(59,130,246,.4)",  anim:"rqFloatB" },
-        { l:"3%",  t:"62%", s:70,  delay:"2s",   dur:"11s", col:"rgba(139,92,246,.35)", anim:"rqFloatC" },
-        { r:"4%",  b:"22%", s:160, delay:"1s",   dur:"14s", col:"rgba(139,92,246,.3)",  anim:"rqFloatB" },
-        { l:"38%", t:"8%",  s:90,  delay:"0.5s", dur:"20s", col:"rgba(167,139,250,.25)",anim:"rqDrift"  },
-        { l:"60%", b:"35%", s:55,  delay:"3s",   dur:"7s",  col:"rgba(59,130,246,.28)", anim:"rqFloatA" },
+        { l:"7%",  t:"28%", s:120, delay:"0s",   dur:"8s",  col:"rgba(52,211,153,.4)",  anim:"rqFloatB" },
+        { l:"3%",  t:"62%", s:70,  delay:"2s",   dur:"11s", col:"rgba(16,185,129,.35)", anim:"rqFloatC" },
+        { r:"4%",  b:"22%", s:160, delay:"1s",   dur:"14s", col:"rgba(6,95,70,.5)",     anim:"rqFloatB" },
+        { l:"38%", t:"8%",  s:90,  delay:"0.5s", dur:"20s", col:"rgba(110,231,183,.25)",anim:"rqDrift"  },
+        { l:"60%", b:"35%", s:55,  delay:"3s",   dur:"7s",  col:"rgba(52,211,153,.28)", anim:"rqFloatA" },
       ].map((p,i)=>(
         <div key={i} style={{ position:"absolute", left:(p as any).l, right:(p as any).r,
           top:(p as any).t, bottom:(p as any).b, width:p.s, height:p.s,
@@ -141,14 +141,14 @@ function CssFallbackBackground() {
 
       {/* Grid */}
       <div style={{ position:"absolute",bottom:0,left:0,right:0,height:"40%",
-        background:`repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(59,130,246,.07) 60px),
-                    repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(59,130,246,.07) 60px)`,
+        background:`repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(16,185,129,.07) 60px),
+                    repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(16,185,129,.07) 60px)`,
         animation:"rqGrid 4s ease-in-out infinite",
         maskImage:"linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 100%)" }}/>
 
       {/* Depth gradients */}
-      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 80% 20%,rgba(76,29,149,.2) 0%,transparent 50%)" }}/>
-      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 10% 80%,rgba(29,78,216,.15) 0%,transparent 50%)" }}/>
+      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 80% 20%,rgba(6,95,70,.25) 0%,transparent 50%)" }}/>
+      <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 10% 80%,rgba(16,185,129,.12) 0%,transparent 50%)" }}/>
     </div>
   );
 }

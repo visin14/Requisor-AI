@@ -156,7 +156,7 @@ export default function Home() {
         
         <div className="flex flex-col sm:flex-row gap-6">
           <Link href="/candidate">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-8 h-14 text-lg rounded-none shadow-[0_0_30px_rgba(100,50,255,0.4)]">
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-8 h-14 text-lg rounded-none shadow-[0_0_30px_rgba(52,211,153,0.4)]">
               Explore Candidate Portal
             </Button>
           </Link>
@@ -326,7 +326,7 @@ export default function Home() {
               <div className="text-white/50 font-mono text-sm tracking-widest uppercase">Analysis Modules</div>
             </div>
             <div>
-              <div className="text-5xl md:text-6xl font-bold text-blue-500 mb-2 stat-counter font-mono" data-value="100">0</div>
+              <div className="text-5xl md:text-6xl font-bold text-primary mb-2 stat-counter font-mono" data-value="100">0</div>
               <div className="text-white/50 font-mono text-sm tracking-widest uppercase">Point Scoring System</div>
             </div>
             <div>
@@ -343,7 +343,7 @@ export default function Home() {
         <h2 className="section-heading text-4xl md:text-6xl font-bold text-white mb-8 max-w-3xl mx-auto">
           Take command of your hiring pipeline.
         </h2>
-        <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 h-16 text-xl rounded-none shadow-[0_0_40px_rgba(100,50,255,0.5)] group mt-8">
+        <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 h-16 text-xl rounded-none shadow-[0_0_40px_rgba(52,211,153,0.5)] group mt-8">
           Initialize System <ArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
         </Button>
       </section>
