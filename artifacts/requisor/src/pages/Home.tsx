@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@/components/ui/button";
-import { FileText, Cpu, Target, LineChart, Users, ShieldAlert, ArrowRight, Activity, Zap, BarChart3, Map, CheckCircle2 } from "lucide-react";
+import { FileText, Cpu, Target, LineChart, Users, ShieldAlert, ArrowRight, Zap, Map, CheckCircle2 } from "lucide-react";
 import dinoLogo from "@assets/dino_1782732856077.jpeg";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -119,11 +119,6 @@ export default function Home() {
             <div className="text-xl font-bold text-gray-900 tracking-tight leading-none">Requisor AI</div>
             <div className="text-xs font-mono text-primary uppercase tracking-widest mt-0.5">Recruitment Intelligence</div>
           </div>
-        </div>
-
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 backdrop-blur-md">
-          <Activity className="w-4 h-4 text-primary" />
-          <span className="text-sm font-mono text-primary font-medium tracking-wide">Requisor Engine v2.0 Online</span>
         </div>
 
         <h1 ref={heroTextRef} className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-gray-900 mb-6" style={{ perspective: "1000px" }}>
