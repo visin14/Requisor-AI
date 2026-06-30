@@ -22,68 +22,77 @@ function useScrollY() {
   return scrollY;
 }
 
-/* ─── 3D Dino Model ──────────────────────────────────────────────────────── */
+/* ─── 3D Dino Model — scroll-scrubbed animation ─────────────────────────── */
 
 interface DinoProps {
   position: [number, number, number];
   scale?: number;
-  scrollSpeed?: number;   // how fast it drifts with scroll
-  rotateSpeed?: number;   // spin rate on scroll
-  floatAmp?: number;      // idle float amplitude
-  baseRotY?: number;      // initial Y rotation
+  /** Fraction of total scroll used per full animation loop (1 = one loop over full page) */
+  scrollLoops?: number;
+  /** Y offset multiplier as scroll progresses (parallax drift) */
+  driftY?: number;
+  /** X travel distance: dino walks this many units across screen while scrolling */
+  travelX?: number;
+  baseRotY?: number;
 }
 
-function DinoModel({ position, scale = 1, scrollSpeed = 0.003, rotateSpeed = 0.0008, floatAmp = 0.5, baseRotY = 0 }: DinoProps) {
+function DinoModel({ position, scale = 1, scrollLoops = 3, driftY = -0.004, travelX = 0, baseRotY = 0 }: DinoProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF("/dino-motion.glb");
-  const { actions } = useAnimations(animations, group);
+  const { mixer, actions } = useAnimations(animations, group);
   const scrollY = useScrollY();
   const baseY = position[1];
+  const baseX = position[0];
 
-  // Clone scene so multiple instances don't share materials
+  // Clone so instances don't share materials
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
 
-  // Set emissive green tint on all meshes
+  // Apply subtle green emissive tint
   useEffect(() => {
     clonedScene.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        const mesh = obj as THREE.Mesh;
-        if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((m: THREE.Material) => {
-            if ((m as THREE.MeshStandardMaterial).emissive) {
-              (m as THREE.MeshStandardMaterial).emissive.set("#065f46");
-              (m as THREE.MeshStandardMaterial).emissiveIntensity = 0.15;
-            }
-          });
-        } else if ((mesh.material as THREE.MeshStandardMaterial).emissive) {
-          (mesh.material as THREE.MeshStandardMaterial).emissive.set("#065f46");
-          (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.15;
-        }
-      }
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mats.forEach((m) => {
+        const sm = m as THREE.MeshStandardMaterial;
+        if (sm.emissive) { sm.emissive.set("#10b981"); sm.emissiveIntensity = 0.12; }
+      });
     });
   }, [clonedScene]);
 
-  // Play first animation if available
+  // Play the clip but immediately pause it — we'll scrub manually
   useEffect(() => {
-    const firstKey = Object.keys(actions)[0];
-    if (firstKey && actions[firstKey]) {
-      actions[firstKey]!.play();
+    const key = Object.keys(actions)[0];
+    if (key && actions[key]) {
+      actions[key]!.play();
+      actions[key]!.paused = true;
     }
   }, [actions]);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (!group.current) return;
-    const t = state.clock.elapsedTime;
-    const sy = scrollY.current;
 
-    // Idle float
-    group.current.position.y = baseY + Math.sin(t * 0.7) * floatAmp - sy * scrollSpeed;
-    // Scroll-driven rotation
-    group.current.rotation.y = baseRotY + Math.sin(t * 0.3) * 0.2 + sy * rotateSpeed;
-    // Gentle tilt
-    group.current.rotation.x = Math.sin(t * 0.5) * 0.06;
-    // Subtle lateral sway
-    group.current.position.x = position[0] + Math.sin(t * 0.4) * 0.2;
+    const sy = scrollY.current;
+    const maxScroll = Math.max(
+      document.documentElement.scrollHeight - window.innerHeight,
+      1
+    );
+    // Normalised scroll 0→1
+    const t = sy / maxScroll;
+
+    // ── Scrub animation: advance through the clip in proportion to scroll ──
+    const duration = animations[0]?.duration ?? 1;
+    // scrollLoops controls how many full animation cycles happen across the page
+    mixer.setTime(((t * scrollLoops) % 1) * duration);
+
+    // ── Parallax: drift upward and travel laterally as page scrolls ──
+    group.current.position.y = baseY + sy * driftY;
+    group.current.position.x = baseX + t * travelX;
+
+    // ── Gentle body tilt tied to travel direction ──
+    const leanDir = travelX >= 0 ? 1 : -1;
+    group.current.rotation.y = baseRotY + leanDir * t * 0.6;
+    group.current.rotation.z = Math.sin(t * Math.PI * scrollLoops * 2) * 0.04;
   });
 
   return (
@@ -141,11 +150,14 @@ function Scene() {
       <directionalLight position={[-10, -10, -5]} intensity={1} color="#10b981" />
       <pointLight position={[0, 5, 5]} intensity={0.5} color="#6ee7b7" />
 
-      {/* ── Dino models (scroll-animated) ── */}
+      {/* ── Dino models — scroll-scrubbed, each walks across the scene ── */}
       <Suspense fallback={null}>
-        <DinoModel position={[6, 1, -8]}  scale={1.8} scrollSpeed={0.004} rotateSpeed={0.0006} floatAmp={0.6} baseRotY={-0.4} />
-        <DinoModel position={[-7, -1, -12]} scale={1.2} scrollSpeed={0.007} rotateSpeed={0.001}  floatAmp={0.8} baseRotY={0.8} />
-        <DinoModel position={[2, 4, -18]}  scale={0.8} scrollSpeed={0.010} rotateSpeed={0.0015} floatAmp={1.0} baseRotY={Math.PI} />
+        {/* Large dino near-right: walks left→right, 3 animation loops across page */}
+        <DinoModel position={[3, 0, -6]}  scale={2.0} scrollLoops={3} driftY={-0.003} travelX={8}  baseRotY={-0.3} />
+        {/* Mid dino left: walks right→left, offset loops */}
+        <DinoModel position={[-5, -1, -12]} scale={1.4} scrollLoops={2} driftY={-0.005} travelX={-6} baseRotY={0.6} />
+        {/* Small far dino: slow drift */}
+        <DinoModel position={[0, 3, -20]}  scale={0.9} scrollLoops={4} driftY={-0.008} travelX={5}  baseRotY={Math.PI} />
       </Suspense>
 
       {/* ── Geometric shapes ── */}
@@ -193,41 +205,56 @@ const PARTICLES = Array.from({ length: 110 }, (_, i) => ({
   delay: (i * 0.19) % 5,
 }));
 
-// Floating dinos: position, size, animation duration, delay, opacity, rotate direction
+// Each dino: starting position, size, travel direction & distance, parallax Y speed, opacity
 const DINOS = [
-  { left:"82%", top:"18%",  size:90,  dur:"9s",  delay:"0s",   opacity:0.18, spin:1  },
-  { left:"5%",  top:"55%",  size:70,  dur:"12s", delay:"2s",   opacity:0.14, spin:-1 },
-  { left:"48%", top:"78%",  size:55,  dur:"8s",  delay:"1s",   opacity:0.12, spin:1  },
-  { left:"70%", top:"60%",  size:44,  dur:"14s", delay:"3.5s", opacity:0.10, spin:-1 },
-  { left:"22%", top:"12%",  size:62,  dur:"11s", delay:"0.8s", opacity:0.13, spin:1  },
-  { left:"91%", top:"72%",  size:80,  dur:"10s", delay:"4s",   opacity:0.15, spin:-1 },
-  { left:"35%", top:"44%",  size:38,  dur:"7s",  delay:"2.5s", opacity:0.09, spin:1  },
+  { startLeft:75, startTop:18, size:90,  travelX: 18,  travelY:-22, opacity:0.18, scaleOnScroll: 1.12 },
+  { startLeft: 5, startTop:55, size:70,  travelX:-16,  travelY:-18, opacity:0.14, scaleOnScroll: 0.88 },
+  { startLeft:48, startTop:78, size:55,  travelX: 22,  travelY:-30, opacity:0.12, scaleOnScroll: 1.08 },
+  { startLeft:68, startTop:60, size:44,  travelX:-12,  travelY:-15, opacity:0.10, scaleOnScroll: 0.92 },
+  { startLeft:18, startTop:12, size:62,  travelX: 14,  travelY:-10, opacity:0.13, scaleOnScroll: 1.06 },
+  { startLeft:85, startTop:72, size:80,  travelX:-20,  travelY:-25, opacity:0.15, scaleOnScroll: 0.90 },
+  { startLeft:32, startTop:44, size:38,  travelX: 10,  travelY:-12, opacity:0.09, scaleOnScroll: 1.04 },
 ];
 
 function CssFallbackBackground() {
   const ringsRef    = useRef<HTMLDivElement>(null);
   const rings2Ref   = useRef<HTMLDivElement>(null);
-  const dinoLayerRef= useRef<HTMLDivElement>(null);
   const geoLayerRef = useRef<HTMLDivElement>(null);
   const particleRef = useRef<HTMLDivElement>(null);
   const gridRef     = useRef<HTMLDivElement>(null);
+  // Individual refs for each dino so they can move independently
+  const dinoRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     let rafId = 0;
-    let lastScroll = 0;
+    let lastScroll = -1;
     const onScroll = () => {
       const sy = window.scrollY;
       if (sy === lastScroll) return;
       lastScroll = sy;
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        // Each layer moves at a different speed — creates true parallax depth
+        const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        const t = sy / maxScroll; // 0→1 across the page
+
+        // Layer parallax (background layers)
         if (ringsRef.current)     ringsRef.current.style.transform     = `translateY(${sy * -0.18}px) scale(${1 + sy * 0.00008})`;
         if (rings2Ref.current)    rings2Ref.current.style.transform    = `translateY(${sy * 0.10}px)`;
-        if (dinoLayerRef.current) dinoLayerRef.current.style.transform = `translateY(${sy * -0.25}px)`;
         if (geoLayerRef.current)  geoLayerRef.current.style.transform  = `translateY(${sy * -0.12}px) rotate(${sy * 0.01}deg)`;
         if (particleRef.current)  particleRef.current.style.transform  = `translateY(${sy * 0.08}px)`;
         if (gridRef.current)      gridRef.current.style.transform      = `translateY(${sy * -0.06}px)`;
+
+        // Each dino walks independently: translate X (walk) + Y (drift up), scale slightly
+        DINOS.forEach((d, i) => {
+          const el = dinoRefs.current[i];
+          if (!el) return;
+          const tx = t * d.travelX * 10;   // walk left or right
+          const ty = t * d.travelY * 10;   // drift upward at own speed
+          const sc = 1 + (d.scaleOnScroll - 1) * t; // grow or shrink
+          // Also add a tiny walk-bounce: bob up/down to simulate footsteps
+          const bounce = Math.sin(t * Math.PI * 8) * 4 * Math.abs(d.travelX / 18);
+          el.style.transform = `translate(${tx}px, ${ty + bounce}px) scale(${sc})`;
+        });
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -325,17 +352,27 @@ function CssFallbackBackground() {
         ))}
       </div>
 
-      {/* ── LAYER 4: Floating Dino images (fastest parallax — most "depth") ── */}
-      <div ref={dinoLayerRef} style={{ position:"absolute",inset:0,willChange:"transform" }}>
+      {/* ── LAYER 4: Dino images — each walks individually driven by scroll ── */}
+      <div style={{ position:"absolute",inset:0,pointerEvents:"none" }}>
         {DINOS.map((d,i)=>(
-          <div key={i} style={{ position:"absolute", left:d.left, top:d.top,
-            width:d.size, height:d.size, opacity:d.opacity,
-            animation:`${i%2===0?"rqDinoFloat":"rqDinoFloatB"} ${d.dur} ease-in-out infinite`,
-            animationDelay:d.delay,
-            filter:"drop-shadow(0 4px 12px rgba(16,185,129,0.25))",
-            pointerEvents:"none" }}>
-            <img src="/dino-logo.jpeg" alt="" style={{ width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",
-              border:"1.5px solid rgba(52,211,153,0.3)" }} />
+          <div
+            key={i}
+            ref={el => { dinoRefs.current[i] = el; }}
+            style={{
+              position:"absolute",
+              left:`${d.startLeft}%`,
+              top:`${d.startTop}%`,
+              width:d.size,
+              height:d.size,
+              opacity:d.opacity,
+              willChange:"transform",
+              filter:"drop-shadow(0 4px 16px rgba(16,185,129,0.30))",
+              transition:"opacity 0.3s",
+            }}>
+            <img src="/dino-logo.jpeg" alt="" style={{
+              width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%",
+              border:"1.5px solid rgba(52,211,153,0.35)"
+            }} />
           </div>
         ))}
       </div>
