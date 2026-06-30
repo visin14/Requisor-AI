@@ -1,7 +1,100 @@
-import { useRef, useMemo, useState, useEffect, Component, ReactNode } from "react";
+import { useRef, useMemo, useState, useEffect, Suspense, Component, ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Points, PointMaterial, Float, Grid } from "@react-three/drei";
+import { Points, PointMaterial, Float, Grid, useGLTF, useAnimations } from "@react-three/drei";
 import * as THREE from "three";
+
+/* ─── Scroll tracker (shared across components) ─────────────────────────── */
+
+function useScrollY() {
+  const scrollY = useRef(0);
+  useEffect(() => {
+    const el = document.getElementById("scroll-root") ?? window;
+    const onScroll = () => {
+      scrollY.current = (el as Window).scrollY ?? (el as Element).scrollTop ?? 0;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+  return scrollY;
+}
+
+/* ─── 3D Dino Model ──────────────────────────────────────────────────────── */
+
+interface DinoProps {
+  position: [number, number, number];
+  scale?: number;
+  scrollSpeed?: number;   // how fast it drifts with scroll
+  rotateSpeed?: number;   // spin rate on scroll
+  floatAmp?: number;      // idle float amplitude
+  baseRotY?: number;      // initial Y rotation
+}
+
+function DinoModel({ position, scale = 1, scrollSpeed = 0.003, rotateSpeed = 0.0008, floatAmp = 0.5, baseRotY = 0 }: DinoProps) {
+  const group = useRef<THREE.Group>(null);
+  const { scene, animations } = useGLTF("/dino-motion.glb");
+  const { actions } = useAnimations(animations, group);
+  const scrollY = useScrollY();
+  const baseY = position[1];
+
+  // Clone scene so multiple instances don't share materials
+  const clonedScene = useMemo(() => scene.clone(true), [scene]);
+
+  // Set emissive green tint on all meshes
+  useEffect(() => {
+    clonedScene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((m: THREE.Material) => {
+            if ((m as THREE.MeshStandardMaterial).emissive) {
+              (m as THREE.MeshStandardMaterial).emissive.set("#065f46");
+              (m as THREE.MeshStandardMaterial).emissiveIntensity = 0.15;
+            }
+          });
+        } else if ((mesh.material as THREE.MeshStandardMaterial).emissive) {
+          (mesh.material as THREE.MeshStandardMaterial).emissive.set("#065f46");
+          (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.15;
+        }
+      }
+    });
+  }, [clonedScene]);
+
+  // Play first animation if available
+  useEffect(() => {
+    const firstKey = Object.keys(actions)[0];
+    if (firstKey && actions[firstKey]) {
+      actions[firstKey]!.play();
+    }
+  }, [actions]);
+
+  useFrame((state) => {
+    if (!group.current) return;
+    const t = state.clock.elapsedTime;
+    const sy = scrollY.current;
+
+    // Idle float
+    group.current.position.y = baseY + Math.sin(t * 0.7) * floatAmp - sy * scrollSpeed;
+    // Scroll-driven rotation
+    group.current.rotation.y = baseRotY + Math.sin(t * 0.3) * 0.2 + sy * rotateSpeed;
+    // Gentle tilt
+    group.current.rotation.x = Math.sin(t * 0.5) * 0.06;
+    // Subtle lateral sway
+    group.current.position.x = position[0] + Math.sin(t * 0.4) * 0.2;
+  });
+
+  return (
+    <group ref={group} position={position} scale={scale} rotation={[0, baseRotY, 0]}>
+      <primitive object={clonedScene} />
+    </group>
+  );
+}
+
+// Preload for faster first render
+useGLTF.preload("/dino-motion.glb");
 
 /* ─── Scene ─────────────────────────────────────────────────────────────── */
 
@@ -9,6 +102,7 @@ function Scene() {
   const groupRef = useRef<THREE.Group>(null);
   const torusRef = useRef<THREE.Mesh>(null);
   const particlesRef = useRef<THREE.Points>(null);
+  const scrollY = useScrollY();
 
   useFrame((state) => {
     const targetX = (state.mouse.x * Math.PI) / 10;
@@ -17,14 +111,14 @@ function Scene() {
       groupRef.current.rotation.y += 0.02 * (targetX - groupRef.current.rotation.y);
       groupRef.current.rotation.x += 0.02 * (targetY - groupRef.current.rotation.x);
     }
-    const scrollY = window.scrollY;
+    const sy = scrollY.current;
     if (torusRef.current) {
       torusRef.current.rotation.x += 0.001;
       torusRef.current.rotation.y += 0.002;
-      torusRef.current.position.y = Math.sin(state.clock.elapsedTime) * 0.5 - scrollY * 0.002;
+      torusRef.current.position.y = Math.sin(state.clock.elapsedTime) * 0.5 - sy * 0.002;
     }
     if (particlesRef.current) {
-      particlesRef.current.position.y = scrollY * 0.005;
+      particlesRef.current.position.y = sy * 0.005;
       particlesRef.current.rotation.y = state.clock.elapsedTime * 0.05;
     }
   });
@@ -42,9 +136,19 @@ function Scene() {
 
   return (
     <group ref={groupRef}>
-      <ambientLight intensity={0.5} />
+      <ambientLight intensity={0.8} />
       <directionalLight position={[10, 10, 5]} intensity={2} color="#34d399" />
       <directionalLight position={[-10, -10, -5]} intensity={1} color="#10b981" />
+      <pointLight position={[0, 5, 5]} intensity={0.5} color="#6ee7b7" />
+
+      {/* ── Dino models (scroll-animated) ── */}
+      <Suspense fallback={null}>
+        <DinoModel position={[6, 1, -8]}  scale={1.8} scrollSpeed={0.004} rotateSpeed={0.0006} floatAmp={0.6} baseRotY={-0.4} />
+        <DinoModel position={[-7, -1, -12]} scale={1.2} scrollSpeed={0.007} rotateSpeed={0.001}  floatAmp={0.8} baseRotY={0.8} />
+        <DinoModel position={[2, 4, -18]}  scale={0.8} scrollSpeed={0.010} rotateSpeed={0.0015} floatAmp={1.0} baseRotY={Math.PI} />
+      </Suspense>
+
+      {/* ── Geometric shapes ── */}
       <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
         <mesh ref={torusRef} position={[5, 0, -10]} scale={2}>
           <torusKnotGeometry args={[2, 0.6, 128, 32]} />
@@ -64,6 +168,8 @@ function Scene() {
           <meshStandardMaterial color="#10b981" wireframe transparent opacity={0.2} />
         </mesh>
       </Float>
+
+      {/* ── Particles ── */}
       <Points ref={particlesRef} positions={positions} stride={3}>
         <PointMaterial transparent color="#6ee7b7" size={0.1} sizeAttenuation
           depthWrite={false} blending={THREE.AdditiveBlending} />
@@ -99,6 +205,35 @@ const DINOS = [
 ];
 
 function CssFallbackBackground() {
+  const ringsRef    = useRef<HTMLDivElement>(null);
+  const rings2Ref   = useRef<HTMLDivElement>(null);
+  const dinoLayerRef= useRef<HTMLDivElement>(null);
+  const geoLayerRef = useRef<HTMLDivElement>(null);
+  const particleRef = useRef<HTMLDivElement>(null);
+  const gridRef     = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let rafId = 0;
+    let lastScroll = 0;
+    const onScroll = () => {
+      const sy = window.scrollY;
+      if (sy === lastScroll) return;
+      lastScroll = sy;
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        // Each layer moves at a different speed — creates true parallax depth
+        if (ringsRef.current)     ringsRef.current.style.transform     = `translateY(${sy * -0.18}px) scale(${1 + sy * 0.00008})`;
+        if (rings2Ref.current)    rings2Ref.current.style.transform    = `translateY(${sy * 0.10}px)`;
+        if (dinoLayerRef.current) dinoLayerRef.current.style.transform = `translateY(${sy * -0.25}px)`;
+        if (geoLayerRef.current)  geoLayerRef.current.style.transform  = `translateY(${sy * -0.12}px) rotate(${sy * 0.01}deg)`;
+        if (particleRef.current)  particleRef.current.style.transform  = `translateY(${sy * 0.08}px)`;
+        if (gridRef.current)      gridRef.current.style.transform      = `translateY(${sy * -0.06}px)`;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(rafId); };
+  }, []);
+
   return (
     <div style={{ position:"absolute", inset:0,
       background:"radial-gradient(ellipse at 30% 40%,#ecfdf5 0%,#f0fdf4 40%,#ffffff 100%)",
@@ -121,94 +256,98 @@ function CssFallbackBackground() {
         @keyframes rqWobble{0%,100%{transform:translateX(0) translateY(0) rotate(0deg)}25%{transform:translateX(8px) translateY(-12px) rotate(5deg)}75%{transform:translateX(-6px) translateY(10px) rotate(-4deg)}}
       `}</style>
 
-      {/* ── Large concentric ring system (top-right) ── */}
-      <div style={{ position:"absolute",right:"6%",top:"8%",width:560,height:560,display:"flex",alignItems:"center",justifyContent:"center" }}>
-        {[560,440,320,200,100].map((s,i)=>(
-          <div key={s} style={{ position:"absolute",width:s,height:s,borderRadius:"50%",
-            border:`${i===0?2:1}px solid rgba(${i%2===0?"52,211,153":"16,185,129"},${0.30-i*0.05})`,
-            boxShadow:i===0?"0 0 60px rgba(52,211,153,.12),inset 0 0 60px rgba(16,185,129,.06)":undefined,
-            animation:`rqFloatA ${12+i*3}s ease-in-out infinite${i%2?"":" reverse"}` }} />
-        ))}
-        <div style={{ position:"absolute",width:10,height:10,borderRadius:"50%",background:"rgba(110,231,183,.75)",
-          boxShadow:"0 0 12px rgba(110,231,183,.9)",animation:"rqOrbit 8s linear infinite" }}/>
-        <div style={{ position:"absolute",width:7,height:7,borderRadius:"50%",background:"rgba(52,211,153,.65)",
-          boxShadow:"0 0 9px rgba(52,211,153,.8)",animation:"rqOrbitB 14s linear infinite reverse" }}/>
-        <div style={{ position:"absolute",width:5,height:5,borderRadius:"50%",background:"rgba(16,185,129,.5)",
-          animation:"rqOrbit 22s linear infinite reverse" }}/>
-      </div>
-
-      {/* ── Second ring cluster (bottom-left) ── */}
-      <div style={{ position:"absolute",left:"-5%",bottom:"10%",width:380,height:380,display:"flex",alignItems:"center",justifyContent:"center" }}>
-        {[380,280,180].map((s,i)=>(
-          <div key={s} style={{ position:"absolute",width:s,height:s,borderRadius:"50%",
-            border:`1px solid rgba(52,211,153,${0.18-i*0.04})`,
-            animation:`rqFloatB ${10+i*4}s ease-in-out infinite${i%2?"":" reverse"}` }} />
-        ))}
-      </div>
-
-      {/* ── Rotating diamonds ── */}
-      {[
-        { l:"7%",  t:"28%", s:120, delay:"0s",   dur:"8s",  col:"rgba(52,211,153,.35)", anim:"rqFloatB" },
-        { l:"3%",  t:"62%", s:70,  delay:"2s",   dur:"11s", col:"rgba(16,185,129,.30)", anim:"rqFloatC" },
-        { r:"4%",  b:"22%", s:160, delay:"1s",   dur:"14s", col:"rgba(52,211,153,.28)", anim:"rqFloatB" },
-        { l:"38%", t:"6%",  s:90,  delay:"0.5s", dur:"20s", col:"rgba(110,231,183,.22)",anim:"rqDrift"  },
-        { l:"60%", b:"35%", s:55,  delay:"3s",   dur:"7s",  col:"rgba(52,211,153,.24)", anim:"rqFloatA" },
-        { l:"50%", t:"20%", s:40,  delay:"1.5s", dur:"9s",  col:"rgba(16,185,129,.20)", anim:"rqFloatC" },
-        { r:"18%", b:"45%", s:75,  delay:"4s",   dur:"13s", col:"rgba(110,231,183,.18)",anim:"rqDrift"  },
-      ].map((p,i)=>(
-        <div key={i} style={{ position:"absolute", left:(p as any).l, right:(p as any).r,
-          top:(p as any).t, bottom:(p as any).b, width:p.s, height:p.s,
-          border:`1.5px solid ${p.col}`, transform:"rotate(45deg)",
-          boxShadow:i<3?`0 0 25px ${p.col}`:undefined,
-          animation:`${p.anim} ${p.dur} ease-in-out infinite`, animationDelay:p.delay }} />
-      ))}
-
-      {/* ── Hexagons ── */}
-      {[
-        { l:"15%", t:"40%", s:100, delay:"0s",  dur:"16s" },
-        { r:"12%", t:"50%", s:65,  delay:"3s",  dur:"12s" },
-        { l:"55%", b:"20%", s:80,  delay:"1.5s",dur:"18s" },
-      ].map((h,i)=>(
-        <div key={i} style={{ position:"absolute", left:(h as any).l, right:(h as any).r,
-          top:(h as any).t, bottom:(h as any).b, width:h.s, height:h.s,
-          background:"transparent",
-          outline:`1.5px solid rgba(16,185,129,0.2)`,
-          clipPath:"polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-          animation:`rqHex ${h.dur} ease-in-out infinite`, animationDelay:h.delay }} />
-      ))}
-
-      {/* ── Blob shapes ── */}
-      {[
-        { l:"25%", t:"65%", w:180, h:160, delay:"0s",  dur:"12s", col:"rgba(52,211,153,.07)" },
-        { r:"20%", t:"30%", w:220, h:200, delay:"4s",  dur:"15s", col:"rgba(16,185,129,.06)" },
-        { l:"60%", t:"5%",  w:140, h:130, delay:"2s",  dur:"10s", col:"rgba(110,231,183,.08)"},
-      ].map((b,i)=>(
-        <div key={i} style={{ position:"absolute", left:(b as any).l, right:(b as any).r,
-          top:b.t, width:b.w, height:b.h, background:b.col,
-          borderRadius:"60% 40% 30% 70%/60% 30% 70% 40%",
-          animation:`rqBlob ${b.dur} ease-in-out infinite`, animationDelay:b.delay }} />
-      ))}
-
-      {/* ── Floating Dino images ── */}
-      {DINOS.map((d,i)=>(
-        <div key={i} style={{ position:"absolute", left:d.left, top:d.top,
-          width:d.size, height:d.size,
-          opacity:d.opacity,
-          animation:`${i%2===0?"rqDinoFloat":"rqDinoFloatB"} ${d.dur} ease-in-out infinite`,
-          animationDelay:d.delay,
-          filter:"drop-shadow(0 4px 12px rgba(16,185,129,0.25))",
-          pointerEvents:"none" }}>
-          <img src="/dino-logo.jpeg" alt="" style={{ width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",
-            border:"1.5px solid rgba(52,211,153,0.3)" }} />
+      {/* ── LAYER 1: Large concentric ring system (top-right) — slowest parallax ── */}
+      <div ref={ringsRef} style={{ position:"absolute",inset:0,willChange:"transform" }}>
+        <div style={{ position:"absolute",right:"6%",top:"8%",width:560,height:560,display:"flex",alignItems:"center",justifyContent:"center" }}>
+          {[560,440,320,200,100].map((s,i)=>(
+            <div key={s} style={{ position:"absolute",width:s,height:s,borderRadius:"50%",
+              border:`${i===0?2:1}px solid rgba(${i%2===0?"52,211,153":"16,185,129"},${0.30-i*0.05})`,
+              boxShadow:i===0?"0 0 60px rgba(52,211,153,.12),inset 0 0 60px rgba(16,185,129,.06)":undefined,
+              animation:`rqFloatA ${12+i*3}s ease-in-out infinite${i%2?"":" reverse"}` }} />
+          ))}
+          <div style={{ position:"absolute",width:10,height:10,borderRadius:"50%",background:"rgba(110,231,183,.75)",
+            boxShadow:"0 0 12px rgba(110,231,183,.9)",animation:"rqOrbit 8s linear infinite" }}/>
+          <div style={{ position:"absolute",width:7,height:7,borderRadius:"50%",background:"rgba(52,211,153,.65)",
+            boxShadow:"0 0 9px rgba(52,211,153,.8)",animation:"rqOrbitB 14s linear infinite reverse" }}/>
+          <div style={{ position:"absolute",width:5,height:5,borderRadius:"50%",background:"rgba(16,185,129,.5)",
+            animation:"rqOrbit 22s linear infinite reverse" }}/>
         </div>
-      ))}
+      </div>
 
-      {/* ── Particle field (more dots) ── */}
-      {PARTICLES.map(p=>(
-        <div key={p.id} style={{ position:"absolute",left:p.left,top:p.top,
-          width:p.size,height:p.size,borderRadius:"50%",background:p.color,
-          animation:`rqPulse ${p.duration}s ease-in-out infinite`,animationDelay:`${p.delay}s` }}/>
-      ))}
+      {/* ── LAYER 2: Second ring cluster (counter-parallax, moves opposite) ── */}
+      <div ref={rings2Ref} style={{ position:"absolute",inset:0,willChange:"transform" }}>
+        <div style={{ position:"absolute",left:"-5%",bottom:"10%",width:380,height:380,display:"flex",alignItems:"center",justifyContent:"center" }}>
+          {[380,280,180].map((s,i)=>(
+            <div key={s} style={{ position:"absolute",width:s,height:s,borderRadius:"50%",
+              border:`1px solid rgba(52,211,153,${0.18-i*0.04})`,
+              animation:`rqFloatB ${10+i*4}s ease-in-out infinite${i%2?"":" reverse"}` }} />
+          ))}
+        </div>
+      </div>
+
+      {/* ── LAYER 3: Geometric shapes (diamonds + hexagons) ── */}
+      <div ref={geoLayerRef} style={{ position:"absolute",inset:0,willChange:"transform" }}>
+        {[
+          { l:"7%",  t:"28%", s:120, delay:"0s",   dur:"8s",  col:"rgba(52,211,153,.35)", anim:"rqFloatB" },
+          { l:"3%",  t:"62%", s:70,  delay:"2s",   dur:"11s", col:"rgba(16,185,129,.30)", anim:"rqFloatC" },
+          { r:"4%",  b:"22%", s:160, delay:"1s",   dur:"14s", col:"rgba(52,211,153,.28)", anim:"rqFloatB" },
+          { l:"38%", t:"6%",  s:90,  delay:"0.5s", dur:"20s", col:"rgba(110,231,183,.22)",anim:"rqDrift"  },
+          { l:"60%", b:"35%", s:55,  delay:"3s",   dur:"7s",  col:"rgba(52,211,153,.24)", anim:"rqFloatA" },
+          { l:"50%", t:"20%", s:40,  delay:"1.5s", dur:"9s",  col:"rgba(16,185,129,.20)", anim:"rqFloatC" },
+          { r:"18%", b:"45%", s:75,  delay:"4s",   dur:"13s", col:"rgba(110,231,183,.18)",anim:"rqDrift"  },
+        ].map((p,i)=>(
+          <div key={i} style={{ position:"absolute", left:(p as any).l, right:(p as any).r,
+            top:(p as any).t, bottom:(p as any).b, width:p.s, height:p.s,
+            border:`1.5px solid ${p.col}`, transform:"rotate(45deg)",
+            boxShadow:i<3?`0 0 25px ${p.col}`:undefined,
+            animation:`${p.anim} ${p.dur} ease-in-out infinite`, animationDelay:p.delay }} />
+        ))}
+        {[
+          { l:"15%", t:"40%", s:100, delay:"0s",  dur:"16s" },
+          { r:"12%", t:"50%", s:65,  delay:"3s",  dur:"12s" },
+          { l:"55%", b:"20%", s:80,  delay:"1.5s",dur:"18s" },
+        ].map((h,i)=>(
+          <div key={i} style={{ position:"absolute", left:(h as any).l, right:(h as any).r,
+            top:(h as any).t, bottom:(h as any).b, width:h.s, height:h.s,
+            background:"transparent", outline:`1.5px solid rgba(16,185,129,0.2)`,
+            clipPath:"polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
+            animation:`rqHex ${h.dur} ease-in-out infinite`, animationDelay:h.delay }} />
+        ))}
+        {[
+          { l:"25%", t:"65%", w:180, h:160, delay:"0s",  dur:"12s", col:"rgba(52,211,153,.07)" },
+          { r:"20%", t:"30%", w:220, h:200, delay:"4s",  dur:"15s", col:"rgba(16,185,129,.06)" },
+          { l:"60%", t:"5%",  w:140, h:130, delay:"2s",  dur:"10s", col:"rgba(110,231,183,.08)"},
+        ].map((b,i)=>(
+          <div key={i} style={{ position:"absolute", left:(b as any).l, right:(b as any).r,
+            top:b.t, width:b.w, height:b.h, background:b.col,
+            borderRadius:"60% 40% 30% 70%/60% 30% 70% 40%",
+            animation:`rqBlob ${b.dur} ease-in-out infinite`, animationDelay:b.delay }} />
+        ))}
+      </div>
+
+      {/* ── LAYER 4: Floating Dino images (fastest parallax — most "depth") ── */}
+      <div ref={dinoLayerRef} style={{ position:"absolute",inset:0,willChange:"transform" }}>
+        {DINOS.map((d,i)=>(
+          <div key={i} style={{ position:"absolute", left:d.left, top:d.top,
+            width:d.size, height:d.size, opacity:d.opacity,
+            animation:`${i%2===0?"rqDinoFloat":"rqDinoFloatB"} ${d.dur} ease-in-out infinite`,
+            animationDelay:d.delay,
+            filter:"drop-shadow(0 4px 12px rgba(16,185,129,0.25))",
+            pointerEvents:"none" }}>
+            <img src="/dino-logo.jpeg" alt="" style={{ width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",
+              border:"1.5px solid rgba(52,211,153,0.3)" }} />
+          </div>
+        ))}
+      </div>
+
+      {/* ── LAYER 5: Particle field ── */}
+      <div ref={particleRef} style={{ position:"absolute",inset:0,willChange:"transform" }}>
+        {PARTICLES.map(p=>(
+          <div key={p.id} style={{ position:"absolute",left:p.left,top:p.top,
+            width:p.size,height:p.size,borderRadius:"50%",background:p.color,
+            animation:`rqPulse ${p.duration}s ease-in-out infinite`,animationDelay:`${p.delay}s` }}/>
+        ))}
+      </div>
 
       {/* ── Subtle connection lines (SVG) ── */}
       <svg style={{ position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none" }} xmlns="http://www.w3.org/2000/svg">
@@ -221,12 +360,14 @@ function CssFallbackBackground() {
         <circle cx="30%" cy="50%" r="2" fill="rgba(110,231,183,0.15)"/>
       </svg>
 
-      {/* ── Grid plane (bottom) ── */}
-      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:"45%",
-        background:`repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(16,185,129,.06) 60px),
-                    repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(16,185,129,.06) 60px)`,
-        animation:"rqGrid 4s ease-in-out infinite",
-        maskImage:"linear-gradient(to top,rgba(0,0,0,.4) 0%,transparent 100%)" }}/>
+      {/* ── LAYER 6: Grid plane (slowest, anchored) ── */}
+      <div ref={gridRef} style={{ position:"absolute",bottom:0,left:0,right:0,height:"55%",willChange:"transform" }}>
+        <div style={{ position:"absolute",inset:0,
+          background:`repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(16,185,129,.06) 60px),
+                      repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(16,185,129,.06) 60px)`,
+          animation:"rqGrid 4s ease-in-out infinite",
+          maskImage:"linear-gradient(to top,rgba(0,0,0,.4) 0%,transparent 100%)" }}/>
+      </div>
 
       {/* ── Depth gradients ── */}
       <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 80% 20%,rgba(16,185,129,.08) 0%,transparent 50%)" }}/>
