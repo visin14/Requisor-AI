@@ -107,41 +107,82 @@ export default function Home() {
   ];
 
   return (
-    <div ref={containerRef} className="w-full">
-      {/* Hero Section */}
-      <section className="min-h-[90vh] flex flex-col items-center justify-center pt-20 px-6 text-center">
-        {/* Requisor AI branding badge */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg ring-2 ring-primary/30">
-            <img src={dinoLogo} alt="Requisor" className="w-full h-full object-cover" />
+  <div ref={containerRef} className="w-full">
+    {/* Hero Section */}
+    <section className="min-h-screen flex items-center pt-24 px-6 bg-white overflow-hidden">
+      <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+        {/* Left Side */}
+        <div>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg ring-2 ring-primary/30">
+              <img
+                src={dinoLogo}
+                alt="Requisor"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Requisor AI
+              </h3>
+              <p className="text-xs font-mono text-primary uppercase tracking-widest">
+                Recruitment Intelligence
+              </p>
+            </div>
           </div>
-          <div className="text-left">
-            <div className="text-xl font-bold text-gray-900 tracking-tight leading-none">Requisor AI</div>
-            <div className="text-xs font-mono text-primary uppercase tracking-widest mt-0.5">Recruitment Intelligence</div>
+
+          <h1
+            ref={heroTextRef}
+            className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-900 mb-8"
+            style={{ perspective: "1000px" }}
+          >
+            AI-Powered
+            <br />
+            Hiring
+            <br />
+            Intelligence
+          </h1>
+
+          <p className="text-xl text-gray-500 leading-relaxed mb-10 max-w-xl">
+            Where most ATS systems coldly reject, Requisor illuminates.
+            Precision intelligence meets human compassion.
+          </p>
+
+          <div className="flex flex-wrap gap-5">
+            <Link href="/sign-in">
+  <Button
+    size="lg"
+    className="bg-primary hover:bg-primary/90 text-white px-8 h-14 shadow-[0_8px_30px_rgba(16,185,129,0.35)]"
+  >
+    Explore Candidate Portal
+  </Button>
+</Link>
+
+<Link href="/sign-in">
+  <Button
+    size="lg"
+    variant="outline"
+    className="border-primary/30 text-primary hover:bg-primary/5 px-8 h-14"
+  >
+    View Recruiter Dashboard
+  </Button>
+</Link>
           </div>
         </div>
 
-        <h1 ref={heroTextRef} className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-gray-900 mb-6" style={{ perspective: "1000px" }}>
-          AI-Powered Hiring Intelligence
-        </h1>
-
-        <p className="text-xl md:text-2xl text-gray-500 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
-          Where most ATS systems coldly reject, Requisor illuminates. Precision intelligence meets human compassion.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-6">
-          <Link href="/candidate">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-8 h-14 text-lg rounded-none shadow-[0_8px_30px_rgba(16,185,129,0.35)]">
-              Explore Candidate Portal
-            </Button>
-          </Link>
-          <Link href="/recruiter">
-            <Button size="lg" variant="outline" className="border-primary/30 text-primary hover:bg-primary/5 px-8 h-14 text-lg rounded-none">
-              View Recruiter Dashboard
-            </Button>
-          </Link>
+        {/* Right Side Image */}
+        <div className="relative flex justify-center items-center">
+          <img
+            src="/resume-analyzer-hero.png"
+            alt="AI Resume Analyzer"
+            className="w-full max-w-2xl animate-float"
+          />
         </div>
-      </section>
+
+      </div>
+    </section>
 
       {/* How it Works Pipeline */}
       <section className="py-32 px-6 relative z-10 bg-white/70 backdrop-blur-xl border-y border-gray-100">

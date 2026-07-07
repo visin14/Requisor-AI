@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum InterviewDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum InterviewStatus {
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId String @unique
+  name      String?
+  email     String   @unique
+  password  String?
+  role      UserRole @default(USER)
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resumes           Resume[]
+  jobDescriptions   JobDescription[]
+  projects          Project[]
+  interviewSessions InterviewSession[]
+  roadmaps          LearningRoadmap[]
+  chatSessions      ChatSession[]
+  notifications     Notification[]
+  settings          UserSettings?
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  userId     String
+  title      String
+  fileUrl    String?
+  parsedText String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analyses  ResumeAnalysis[]
+}
+
+model JobDescription {
+  id          String   @id @default(cuid())
+  userId      String
+  company     String?
+  jobTitle    String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analyses          ResumeAnalysis[]
+  interviewSessions InterviewSession[]
+}
+
+model ResumeAnalysis {
+  id               String   @id @default(cuid())
+  resumeId         String
+  jobDescriptionId String?
+  atsScore         Int?
+  strengths        Json?
+  weaknesses       Json?
+  missingSkills    Json?
+  suggestions      Json?
+  summary          String?
+  createdAt        DateTime @default(now())
+
+  resume         Resume          @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobDescription JobDescription? @relation(fields: [jobDescriptionId], references: [id], onDelete: SetNull)
+}
+
+model InterviewSession {
+  id               String              @id @default(cuid())
+  userId           String
+  jobDescriptionId String?
+  difficulty       InterviewDifficulty @default(MEDIUM)
+  status           InterviewStatus     @default(STARTED)
+  overallScore     Int?
+  startedAt        DateTime            @default(now())
+  completedAt      DateTime?
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobDescription JobDescription? @relation(fields: [jobDescriptionId], references: [id], onDelete: SetNull)
+  questions      InterviewQuestion[]
+}
+
+model InterviewQuestion {
+  id             String              @id @default(cuid())
+  sessionId      String
+  question       String
+  category       String?
+  difficulty     InterviewDifficulty @default(MEDIUM)
+  expectedAnswer String?
+  order          Int
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  answer  InterviewAnswer?
+}
+
+model InterviewAnswer {
+  id         String   @id @default(cuid())
+  questionId String   @unique
+  answer     String
+  score      Int?
+  feedback   String?
+  createdAt  DateTime @default(now())
+
+  question InterviewQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model LearningRoadmap {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  roadmap   Json
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  githubUrl   String?
+  demoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  role      MessageRole
+  message   String
+  createdAt DateTime    @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  theme              String  @default("light")
+  language           String  @default("en")
+  emailNotifications Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

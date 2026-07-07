@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Show, useClerk, useUser } from "@clerk/react";
-import ThreeBackground from "./ThreeBackground";
+
 import { Button } from "@/components/ui/button";
 import dinoLogo from "@assets/dino_1782732856077.jpeg";
 
@@ -40,10 +40,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 z-0">
-        <ThreeBackground />
-      </div>
+      
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-primary/10 bg-white/80 backdrop-blur-md shadow-sm">
@@ -52,25 +49,27 @@ export default function Layout({ children }: { children: ReactNode }) {
             <div className="rounded-xl overflow-hidden w-9 h-9 ring-2 ring-primary/30 group-hover:ring-primary/70 transition-all shadow-[0_0_14px_rgba(16,185,129,0.2)]">
               <img src={dinoLogo} alt="Requisor Dino Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-gray-900">Requisor</span>
+            <span className="font-bold text-xl tracking-tight text-gray-900">
+  Requisor<span className="text-primary">.AI</span>
+</span>
           </Link>
 
           <div className="flex items-center gap-6">
-            <Show when="signed-in">
-              <Link href="/candidate" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                Candidate
-              </Link>
-              <Link href="/recruiter" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                Recruiter
-              </Link>
-              <UserAvatar />
-            </Show>
+           <Show when="signed-in">
+  <Link href="/candidate-dashboard" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+    Candidate
+  </Link>
+  <Link href="/recruiter-dashboard" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+    Recruiter
+  </Link>
+  <UserAvatar />
+</Show>
 
             <Show when="signed-out">
-              <Link href="/candidate" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+              <Link href="/sign-in" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
                 Candidate
               </Link>
-              <Link href="/recruiter" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+              <Link href="/sign-in" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
                 Recruiter
               </Link>
               <Link href="/sign-in">

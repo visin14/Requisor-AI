@@ -1,6 +1,6 @@
+import ResumeHistory from "./pages/ResumeHistory";
 import { useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
-import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -11,17 +11,19 @@ import Home from "@/pages/Home";
 import Candidate from "@/pages/Candidate";
 import Recruiter from "@/pages/Recruiter";
 import NotFound from "@/pages/not-found";
+import CandidateDashboard from "@/pages/CandidateDashboard";
+import RecruiterDashboard from "@/pages/RecruiterDashboard";
+import ResumeMatching from "./pages/ResumeMatching";
+import SemanticMatching from "./pages/SemanticMatching";
+import HiringDecision from "./pages/HiringDecision";
 
 const queryClient = new QueryClient();
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkProxyUrl = undefined;
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
@@ -84,19 +86,43 @@ const clerkAppearance = {
 
 function SignInPage() {
   return (
-    <div className="relative min-h-[100dvh] flex items-center justify-center px-4"
-      style={{ background: "radial-gradient(ellipse at 30% 40%,#ecfdf5 0%,#f0fdf4 40%,#ffffff 100%)" }}>
+    <div
+      className="relative min-h-[100dvh] flex items-center justify-center px-4"
+      style={{
+        background:
+          "radial-gradient(ellipse at 30% 40%,#ecfdf5 0%,#f0fdf4 40%,#ffffff 100%)",
+      }}
+    >
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {[540, 380, 220].map((s, i) => (
-          <div key={s} style={{ position:"absolute", right:"5%", top:"10%", width:s, height:s,
-            borderRadius:"50%", border:`1px solid rgba(52,211,153,${0.18-i*0.05})`, transform:"translate(30%,-30%)" }} />
+          <div
+            key={s}
+            style={{
+              position: "absolute",
+              right: "5%",
+              top: "10%",
+              width: s,
+              height: s,
+              borderRadius: "50%",
+              border: `1px solid rgba(52,211,153,${0.18 - i * 0.05})`,
+              transform: "translate(30%,-30%)",
+            }}
+          />
         ))}
       </div>
+
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-6">
-          <p className="text-xs font-mono text-emerald-500 uppercase tracking-widest">Requisor AI · Resume Intelligence</p>
+          <p className="text-xs font-mono text-emerald-500 uppercase tracking-widest">
+            Requisor AI · Resume Intelligence
+          </p>
         </div>
-        <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+
+        <SignIn
+          routing="path"
+          path={`${basePath}/sign-in`}
+          signUpUrl={`${basePath}/sign-up`}
+        />
       </div>
     </div>
   );
@@ -104,19 +130,43 @@ function SignInPage() {
 
 function SignUpPage() {
   return (
-    <div className="relative min-h-[100dvh] flex items-center justify-center px-4"
-      style={{ background: "radial-gradient(ellipse at 70% 60%,#ecfdf5 0%,#f0fdf4 40%,#ffffff 100%)" }}>
+    <div
+      className="relative min-h-[100dvh] flex items-center justify-center px-4"
+      style={{
+        background:
+          "radial-gradient(ellipse at 70% 60%,#ecfdf5 0%,#f0fdf4 40%,#ffffff 100%)",
+      }}
+    >
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {[400, 280, 160].map((s, i) => (
-          <div key={s} style={{ position:"absolute", left:"5%", bottom:"10%", width:s, height:s,
-            borderRadius:"50%", border:`1px solid rgba(52,211,153,${0.15-i*0.04})`, transform:"translate(-30%,30%)" }} />
+          <div
+            key={s}
+            style={{
+              position: "absolute",
+              left: "5%",
+              bottom: "10%",
+              width: s,
+              height: s,
+              borderRadius: "50%",
+              border: `1px solid rgba(52,211,153,${0.15 - i * 0.04})`,
+              transform: "translate(-30%,30%)",
+            }}
+          />
         ))}
       </div>
+
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-6">
-          <p className="text-xs font-mono text-emerald-500 uppercase tracking-widest">Requisor AI · Resume Intelligence</p>
+          <p className="text-xs font-mono text-emerald-500 uppercase tracking-widest">
+            Requisor AI · Resume Intelligence
+          </p>
         </div>
-        <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+
+        <SignUp
+          routing="path"
+          path={`${basePath}/sign-up`}
+          signInUrl={`${basePath}/sign-in`}
+        />
       </div>
     </div>
   );
@@ -130,11 +180,17 @@ function ClerkQueryClientCacheInvalidator() {
   useEffect(() => {
     const unsub = addListener(({ user }) => {
       const userId = user?.id ?? null;
-      if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== userId) {
+
+      if (
+        prevUserIdRef.current !== undefined &&
+        prevUserIdRef.current !== userId
+      ) {
         qc.clear();
       }
+
       prevUserIdRef.current = userId;
     });
+
     return unsub;
   }, [addListener, qc]);
 
@@ -145,10 +201,13 @@ function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <Redirect to="/candidate" />
+        <Redirect to="/candidate-dashboard" />
       </Show>
+
       <Show when="signed-out">
-        <Layout><Home /></Layout>
+        <Layout>
+          <Home />
+        </Layout>
       </Show>
     </>
   );
@@ -160,6 +219,7 @@ function ProtectedPage({ children }: { children: React.ReactNode }) {
       <Show when="signed-in">
         <Layout>{children}</Layout>
       </Show>
+
       <Show when="signed-out">
         <Redirect to="/" />
       </Show>
@@ -173,13 +233,23 @@ function AppRoutes() {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
+      
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       localization={{
-        signIn: { start: { title: "Welcome back", subtitle: "Sign in to your Requisor account" } },
-        signUp: { start: { title: "Get started free", subtitle: "Create your Requisor account today" } },
+        signIn: {
+          start: {
+            title: "Welcome back",
+            subtitle: "Sign in to your Requisor account",
+          },
+        },
+        signUp: {
+          start: {
+            title: "Get started free",
+            subtitle: "Create your Requisor account today",
+          },
+        },
       }}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
@@ -187,20 +257,70 @@ function AppRoutes() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ClerkQueryClientCacheInvalidator />
+
           <Switch>
             <Route path="/" component={HomeRedirect} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
+
             <Route path="/candidate">
-              <ProtectedPage><Candidate /></ProtectedPage>
-            </Route>
-            <Route path="/recruiter">
-              <ProtectedPage><Recruiter /></ProtectedPage>
-            </Route>
-            <Route>
-              <Layout><NotFound /></Layout>
-            </Route>
-          </Switch>
+  <ProtectedPage>
+    <Candidate />
+  </ProtectedPage>
+</Route>
+
+<Route path="/recruiter">
+  <ProtectedPage>
+    <Recruiter />
+  </ProtectedPage>
+</Route>
+
+{/* NEW ROUTES START HERE */}
+
+<Route path="/candidate-dashboard">
+  <ProtectedPage>
+    <CandidateDashboard />
+  </ProtectedPage>
+</Route>
+
+<Route path="/recruiter-dashboard">
+  <ProtectedPage>
+    <RecruiterDashboard />
+  </ProtectedPage>
+</Route>
+
+<Route path="/recruiter/match">
+  <ProtectedPage>
+    <ResumeMatching />
+  </ProtectedPage>
+</Route>
+
+<Route path="/recruiter/semantic-match">
+  <ProtectedPage>
+    <SemanticMatching />
+  </ProtectedPage>
+</Route>
+
+<Route path="/recruiter/decision">
+  <ProtectedPage>
+    <HiringDecision />
+  </ProtectedPage>
+</Route>
+
+<Route path="/resume-history">
+  <ProtectedPage>
+    <ResumeHistory />
+  </ProtectedPage>
+</Route>
+{/* NEW ROUTES END HERE */}
+
+<Route>
+  <Layout>
+    <NotFound />
+  </Layout>
+</Route>
+</Switch>
+
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

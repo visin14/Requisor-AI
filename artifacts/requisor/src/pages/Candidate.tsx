@@ -1,3 +1,7 @@
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 import { useState, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -71,14 +75,53 @@ export default function Candidate() {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const readFile = useCallback((f: File) => {
-    setFile(f);
-    setAnalysis(null);
-    setError(null);
+ const readFile = useCallback(async (f: File) => {
+  setFile(f);
+  setAnalysis(null);
+  setError(null);
+
+  try {
+    // PDF Upload
+    if (f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")) {
+      const buffer = await f.arrayBuffer();
+
+      const pdf = await pdfjsLib.getDocument({
+        data: buffer,
+      }).promise;
+
+      let extractedText = "";
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+
+        extractedText +=
+          content.items
+            .map((item: any) => ("str" in item ? item.str : ""))
+            .join(" ") + "\n\n";
+      }
+
+      setResumeText(extractedText.trim());
+      return;
+    }
+
+    // TXT / MD / CSV
     const reader = new FileReader();
-    reader.onload = (e) => setResumeText((e.target?.result as string) ?? "");
+
+    reader.onload = (e) => {
+      setResumeText((e.target?.result as string) ?? "");
+    };
+
+    reader.onerror = () => {
+      setError("Unable to read the file.");
+    };
+
     reader.readAsText(f);
-  }, []);
+  } catch (err) {
+    console.error(err);
+    setError("Failed to extract text from the uploaded PDF.");
+  }
+}, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -92,7 +135,7 @@ export default function Candidate() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/analyze-resume", {
+      const res = await fetch("http://localhost:5000/api/ai/analyze-resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText }),
@@ -143,7 +186,7 @@ export default function Candidate() {
                 <Button size="sm" variant="outline" className="rounded-none border-primary/30 text-primary text-xs">
                   Browse File
                 </Button>
-                <input ref={inputRef} type="file" accept=".txt,.md,.csv" className="hidden"
+                <input ref={inputRef} type="file" accept=".pdf,.txt,.md,.csv,.doc,.docx" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); }} />
               </div>
             ) : (
