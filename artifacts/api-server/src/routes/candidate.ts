@@ -6,9 +6,14 @@ const router = Router();
 
 /* GET /api/candidate/stats */
 router.get("/stats", async (req, res) => {
+  let user;
   try {
-    const user = await getCurrentUser(req);
-
+    user = await getCurrentUser(req);
+  } catch {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
     const analyses = await prisma.resumeAnalysis.findMany({
       where: { resume: { userId: user.id } },
       orderBy: { createdAt: "desc" },
@@ -28,14 +33,20 @@ router.get("/stats", async (req, res) => {
     res.json({ totalAnalyses, avgScore, lastAnalysisDate });
   } catch (err) {
     console.error(err);
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 /* GET /api/candidate/analyses */
 router.get("/analyses", async (req, res) => {
+  let user;
   try {
-    const user = await getCurrentUser(req);
+    user = await getCurrentUser(req);
+  } catch {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
 
     const analyses = await prisma.resumeAnalysis.findMany({
@@ -56,17 +67,23 @@ router.get("/analyses", async (req, res) => {
     );
   } catch (err) {
     console.error(err);
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 /* POST /api/candidate/save-analysis */
 router.post("/save-analysis", async (req, res) => {
+  let user;
   try {
-    const user = await getCurrentUser(req);
+    user = await getCurrentUser(req);
+  } catch {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
     const { resumeTitle, analysis } = req.body as {
       resumeTitle?: string;
-      analysis: {
+      analysis?: {
         name?: string;
         overallScore?: number;
         strengths?: string[];
@@ -75,6 +92,11 @@ router.post("/save-analysis", async (req, res) => {
         scores?: Record<string, number>;
       };
     };
+
+    if (!analysis || typeof analysis !== "object") {
+      res.status(400).json({ error: "analysis object is required" });
+      return;
+    }
 
     const resume = await prisma.resume.create({
       data: {

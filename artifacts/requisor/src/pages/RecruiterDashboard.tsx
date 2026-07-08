@@ -24,6 +24,11 @@ export default function RecruiterDashboard() {
           },
         });
 
+        if (!res.ok) {
+          console.error("Failed to fetch recruiter stats:", res.status);
+          return;
+        }
+
         const data = await res.json();
 
         setStatsData({

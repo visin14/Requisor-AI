@@ -145,14 +145,17 @@ export default function Candidate() {
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json() as ResumeAnalysis;
       setAnalysis(data);
-      // Save to database for dashboard history
+      // Save to database for dashboard history (non-blocking, best-effort)
       try {
         const token = await getToken();
-        await fetch("/api/candidate/save-analysis", {
+        const saveRes = await fetch("/api/candidate/save-analysis", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ resumeTitle: file?.name ?? data.name ?? "Pasted Resume", analysis: data }),
         });
+        if (!saveRes.ok) {
+          console.warn("Save-analysis responded with", saveRes.status);
+        }
       } catch (saveErr) {
         console.warn("Failed to save analysis to history:", saveErr);
       }
