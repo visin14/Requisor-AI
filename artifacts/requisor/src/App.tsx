@@ -1,5 +1,6 @@
 import ResumeHistory from "./pages/ResumeHistory";
 import { useEffect, useRef } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
@@ -330,9 +331,12 @@ function AppRoutes() {
 
 function App() {
   return (
-    <WouterRouter base={basePath}>
-      <AppRoutes />
-    </WouterRouter>
+    <>
+      <WouterRouter base={basePath}>
+        <AppRoutes />
+      </WouterRouter>
+      <Analytics />
+    </>
   );
 }
 
