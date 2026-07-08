@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { API_BASE } from "@/lib/api";
 import { motion } from "framer-motion";
 
 interface Skill {
@@ -16,7 +17,7 @@ export default function SkillChart() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch("/api/candidate/analyses?limit=1", {
+        const res = await fetch(`${API_BASE}/candidate/analyses?limit=1`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

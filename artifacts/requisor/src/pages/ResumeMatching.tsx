@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { API_BASE } from "@/lib/api";
 import {
   ArrowLeft,
   Brain,
@@ -69,7 +70,7 @@ export default function ResumeMatching() {
     setResult(null);
 
     try {
-      const res = await fetch("/api/ai/match", {
+      const res = await fetch(`${API_BASE}/ai/match`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,7 +83,7 @@ export default function ResumeMatching() {
 
       try {
         const token = await getToken();
-        await fetch("/api/recruiter/save-match", {
+        await fetch(`${API_BASE}/recruiter/save-match`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

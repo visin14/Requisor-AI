@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { API_BASE } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Calendar, ArrowRight, Sparkles } from "lucide-react";
@@ -22,7 +23,7 @@ export default function LatestAnalysis() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch("/api/candidate/analyses?limit=1", {
+        const res = await fetch(`${API_BASE}/candidate/analyses?limit=1`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "@/lib/api";
 import {
   ArrowLeft,
   Brain,
@@ -53,7 +54,7 @@ export default function SemanticMatching() {
     setResult(null);
 
     try {
-      const res = await fetch("/api/ai/match", {
+      const res = await fetch(`${API_BASE}/ai/match`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText, jdText }),

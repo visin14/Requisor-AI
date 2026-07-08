@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { API_BASE } from "@/lib/api";
 import { motion } from "framer-motion";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -14,7 +15,7 @@ export default function ResumeGauge() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch("/api/candidate/stats", {
+        const res = await fetch(`${API_BASE}/candidate/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

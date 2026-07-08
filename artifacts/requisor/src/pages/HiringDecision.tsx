@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { API_BASE } from "@/lib/api";
 import {
   ArrowLeft,
   Brain,
@@ -62,7 +63,7 @@ export default function HiringDecision() {
     setResult(null);
 
     try {
-      const res = await fetch("/api/ai/decision", {
+      const res = await fetch(`${API_BASE}/ai/decision`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

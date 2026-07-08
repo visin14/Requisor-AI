@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { API_BASE } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 
@@ -19,7 +20,7 @@ export default function ResumeHistory() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch("/api/candidate/analyses", {
+        const res = await fetch(`${API_BASE}/candidate/analyses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

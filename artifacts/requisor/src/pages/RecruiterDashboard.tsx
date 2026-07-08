@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { API_BASE } from "@/lib/api";
 import { ArrowRight, Brain, Briefcase, FileText, Scale, Sparkles, Users } from "lucide-react";
 import { Link } from "wouter";
 
@@ -18,7 +19,7 @@ export default function RecruiterDashboard() {
       try {
         const token = await getToken();
 
-        const res = await fetch("/api/recruiter/stats", {
+        const res = await fetch(`${API_BASE}/recruiter/stats`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

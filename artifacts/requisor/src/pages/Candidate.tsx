@@ -4,6 +4,7 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 import { useState, useRef, useCallback } from "react";
 import { useAuth } from "@clerk/react";
+import { API_BASE } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -137,7 +138,7 @@ export default function Candidate() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/analyze-resume", {
+      const res = await fetch(`${API_BASE}/ai/analyze-resume`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText }),
@@ -148,7 +149,7 @@ export default function Candidate() {
       // Save to database for dashboard history (non-blocking, best-effort)
       try {
         const token = await getToken();
-        const saveRes = await fetch("/api/candidate/save-analysis", {
+        const saveRes = await fetch(`${API_BASE}/candidate/save-analysis`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ resumeTitle: file?.name ?? data.name ?? "Pasted Resume", analysis: data }),

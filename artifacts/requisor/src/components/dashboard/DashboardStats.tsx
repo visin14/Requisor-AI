@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { API_BASE } from "@/lib/api";
 import { FileText, Star, TrendingUp, Clock } from "lucide-react";
 
 interface Stats {
@@ -21,7 +22,7 @@ export default function DashboardStats() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch("/api/candidate/stats", {
+        const res = await fetch(`${API_BASE}/candidate/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

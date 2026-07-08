@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,7 +100,7 @@ export default function Recruiter() {
     if (!jdText.trim()) return;
     setJdLoading(true); setError(null);
     try {
-      const res = await fetch("/api/ai/analyze-jd", {
+      const res = await fetch(`${API_BASE}/ai/analyze-jd`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jdText }),
       });
@@ -113,7 +114,7 @@ export default function Recruiter() {
     if (!resumeText.trim() || !jdText.trim()) { setError("Both resume and job description are required for matching."); return; }
     setMatchLoading(true); setError(null);
     try {
-      const res = await fetch("/api/ai/match", {
+      const res = await fetch(`${API_BASE}/ai/match`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText, jdText }),
       });
@@ -127,7 +128,7 @@ export default function Recruiter() {
     if (!resumeText.trim() || !jdText.trim()) { setError("Both resume and job description are required."); return; }
     setDecisionLoading(true); setError(null);
     try {
-      const res = await fetch("/api/ai/decision", {
+      const res = await fetch(`${API_BASE}/ai/decision`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText, jdText, matchScore: matchResult?.matchScore, notes: recruiterNotes }),
       });
