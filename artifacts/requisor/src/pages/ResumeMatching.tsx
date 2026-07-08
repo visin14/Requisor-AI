@@ -69,7 +69,7 @@ export default function ResumeMatching() {
     setResult(null);
 
     try {
-      const res = await fetch("http://localhost:5000/api/ai/match", {
+      const res = await fetch("/api/ai/match", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,21 +80,19 @@ export default function ResumeMatching() {
       const data = await res.json();
       setResult(data);
 
-      
- const token = await getToken();
-
-await fetch("http://localhost:5000/api/recruiter/save-decision", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  },
-  body: JSON.stringify({
-    jdText,
-    result: data,
-  }),
-});
-console.log(await saveRes.text());
+      try {
+        const token = await getToken();
+        await fetch("/api/recruiter/save-match", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ resumeText, jdText, result: data }),
+        });
+      } catch (saveErr) {
+        console.warn("Failed to save match result", saveErr);
+      }
 
       setTimeout(() => {
         resultRef.current?.scrollIntoView({

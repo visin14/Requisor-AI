@@ -1,34 +1,85 @@
-import { motion } from "framer-motion";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/react";
+import { FileText, Star, TrendingUp, Clock } from "lucide-react";
 
-export default function ResumeGauge() {
-  const score = 92;
+interface Stats {
+  totalAnalyses: number;
+  avgScore: number;
+  lastAnalysisDate: string | null;
+}
+
+export default function DashboardStats() {
+  const { getToken } = useAuth();
+  const [stats, setStats] = useState<Stats>({
+    totalAnalyses: 0,
+    avgScore: 0,
+    lastAnalysisDate: null,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const token = await getToken();
+        const res = await fetch("/api/candidate/stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setStats(await res.json());
+        }
+      } catch (e) {
+        console.error("Failed to load stats", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [getToken]);
+
+  const grade =
+    stats.avgScore >= 80
+      ? "Excellent"
+      : stats.avgScore >= 60
+        ? "Good"
+        : stats.totalAnalyses > 0
+          ? "Needs Work"
+          : "—";
+
+  const lastDate = stats.lastAnalysisDate
+    ? new Date(stats.lastAnalysisDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : "None yet";
+
+  const items = [
+    { label: "Resumes Analyzed", value: stats.totalAnalyses, icon: FileText },
+    {
+      label: "Average Score",
+      value: stats.avgScore ? `${stats.avgScore}/100` : "—",
+      icon: Star,
+    },
+    { label: "Score Grade", value: grade, icon: TrendingUp },
+    { label: "Last Analysis", value: lastDate, icon: Clock },
+  ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm"
-    >
-      <h2 className="text-xl font-bold mb-6">Resume Score</h2>
-
-      <div className="w-52 mx-auto">
-        <CircularProgressbar
-          value={score}
-          text={`${score}`}
-          styles={buildStyles({
-            pathColor: "#10b981",
-            textColor: "#111827",
-            trailColor: "#e5e7eb",
-          })}
-        />
-      </div>
-
-      <p className="text-center mt-6 text-emerald-600 font-semibold text-lg">
-        Excellent Resume
-      </p>
-    </motion.div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <div
+            key={item.label}
+            className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm"
+          >
+            <Icon className="h-6 w-6 text-emerald-500 mb-3" />
+            <p className="text-sm text-gray-500">{item.label}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">
+              {loading ? "—" : item.value}
+            </p>
+          </div>
+        );
+      })}
+    </div>
   );
 }

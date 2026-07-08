@@ -4,6 +4,7 @@ import health from "./health";
 import testDb from "./test-db";
 import user from "./user";
 import recruiter from "./recruiter";
+import candidate from "./candidate";
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use("/health", health);
 router.use("/test-db", testDb);
 router.use("/user", user);
 router.use("/recruiter", recruiter);
+router.use("/candidate", candidate);
 
 export default router;

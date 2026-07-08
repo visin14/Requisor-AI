@@ -18,7 +18,7 @@ export default function RecruiterDashboard() {
       try {
         const token = await getToken();
 
-        const res = await fetch("http://localhost:5000/api/recruiter/stats", {
+        const res = await fetch("/api/recruiter/stats", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

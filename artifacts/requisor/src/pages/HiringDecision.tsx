@@ -62,7 +62,7 @@ export default function HiringDecision() {
     setResult(null);
 
     try {
-      const res = await fetch("http://localhost:5000/api/ai/decision", {
+      const res = await fetch("/api/ai/decision", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

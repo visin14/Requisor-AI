@@ -3,6 +3,7 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 import { useState, useRef, useCallback } from "react";
+import { useAuth } from "@clerk/react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ function SeverityBadge({ sev }: { sev: string }) {
 }
 
 export default function Candidate() {
+  const { getToken } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [resumeText, setResumeText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -135,7 +137,7 @@ export default function Candidate() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5000/api/ai/analyze-resume", {
+      const res = await fetch("/api/ai/analyze-resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText }),
@@ -143,6 +145,17 @@ export default function Candidate() {
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json() as ResumeAnalysis;
       setAnalysis(data);
+      // Save to database for dashboard history
+      try {
+        const token = await getToken();
+        await fetch("/api/candidate/save-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ resumeTitle: file?.name ?? data.name ?? "Pasted Resume", analysis: data }),
+        });
+      } catch (saveErr) {
+        console.warn("Failed to save analysis to history:", saveErr);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
